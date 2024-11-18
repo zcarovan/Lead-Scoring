@@ -167,26 +167,37 @@ def main():
     
     (score_scaler, worst_score) = find_score_range(att_weight_tables)
 
-    curr_lead = lead_data.iloc[200]
+    curr_lead = lead_data.iloc[8]
     print("The lead we are analyzing:")
     print(curr_lead)
     lead_score = find_lead_score(curr_lead, att_weight_tables, score_scaler, worst_score)
     lead_score = round(lead_score)
-    print("Lead has a lead score of:", lead_score, " (Lead score calculated between -100 and 100)")
+    print("Lead score of:\033[1m", lead_score, "\033[0m\n(Calculated between -100 and 100)")
 
+    likelihood = ""
     #How good is the given lead score?
-    if 50 <= lead_score >= 100:
-        print("Lead is extremely likely to result in a closed deal.")
-    elif 0 < lead_score < 50:
-        print("Lead is relatively likely to result in a closed deal.")
+    if 75 <= lead_score >= 100:
+        likelihood = "extremely likely"
+    elif 50 <= lead_score < 75:
+        likelihood = "quite likely"
+    elif 25 <= lead_score < 50:
+        likelihood = "relatively likely"
+    elif 0 < lead_score < 25:
+        likelihood = "somewhat likely"
     elif lead_score == 0:
-        print("Lead is neither likely nor unlikely to result in a closed deal.")
-    elif -50 < lead_score < 0:
-        print("Lead is relatively unlikely to result in a closed deal.")
+        likelihood = "neither likely nor unlikely"
+    elif -25 < lead_score < 0:
+        likelihood = "somewhat unlikely"
+    elif -50 < lead_score <= -25:
+        likelihood = "relatively unlikely"
+    elif -75 < lead_score <= -50:
+        likelihood = "quite unlikely"
     elif -100 <= lead_score <= -50:
-        print("Lead is extremely unlikely to result in a closed deal.")
+        likelihood = "extremely unlikely"
+        
+    print("Lead is\033[1m", likelihood, "\033[0mto result in a closed deal.")
 
-    # Display the percent table as a bar graph.
+    # Display the percent table as a bar graph.\033[1mHello World!\033[0m
     #create_bar_graph(percent_table, attribute_name)
 
 main()
