@@ -24,7 +24,6 @@ def count_attribute_with_deal(lead_data, attribute_name):
         if (not (null_table[attribute_name][lead])):
             #If property value not in rows column already, add row.
             if prop_value not in count_table.index:
-                #print(prop_value + " is not in the count table yet. Adding")
                 count_table.loc[prop_value] = [0, 0]
             
             # If lead is a closed deal, add to count of Closed Deal column.
@@ -36,7 +35,6 @@ def count_attribute_with_deal(lead_data, attribute_name):
             else:
                 nonclosed_count = count_table['Non-closed Deal'][prop_value]
                 count_table['Non-closed Deal'][prop_value] = nonclosed_count + 1
-                #print("nonclosed_count: ", nonclosed_count)
 
     return(count_table)
 
@@ -44,9 +42,6 @@ def create_percent_table(count_table):
     #Create a table of all the percentages of each attribute there are
     total_closed_count = count_table['Closed Deal'].sum()
     total_nonclosed_count = count_table['Non-closed Deal'].sum()
-
-    #print("closed deal count: ", total_closed_count)
-    #print("non-closed deal count: ", total_nonclosed_count)
 
     percent_table = count_table.copy(deep=True)
 
@@ -109,8 +104,6 @@ def find_score_range(att_weight_tables):
         att_min = att_weight[1]['Difference'].min()
         perfect_score = perfect_score + att_max
         worst_score = worst_score + att_min
-    #print(perfect_score)
-    #print(worst_score)
     score_range = perfect_score - worst_score
     score_scaler = 100 / score_range
 
@@ -123,7 +116,6 @@ def find_lead_score(lead, att_weight_tables, score_scaler, worst_score):
     # Go through single row, add up score.
     lead_score = 0
     null_table = lead.isnull()
-    #print(null_table)
 
     for att_weight in att_weight_tables:
         # Get value for current attribute (ex/ "High Equity")
@@ -133,17 +125,20 @@ def find_lead_score(lead, att_weight_tables, score_scaler, worst_score):
         if null_table[att_weight[0]]:
             #Take the average of all the weights and use that as the weight.
             att_val_weight = curr_att_weight_table['Difference'].mean()
-            #print(curr_att_weight_table)
-            #print("average weight is: ", att_val_weight)
         #If value is present, use the specified weight.
         else:
             att_val_weight = curr_att_weight_table.loc[lead_att_val, 'Difference']
         # Add attribute value's weight to lead score.
         lead_score = lead_score + att_val_weight
     
+    # Scale score with score scaler
     lead_score = lead_score - worst_score
-    #print(lead_score)
     lead_score = lead_score * score_scaler
+
+    #scales to -100 to 100
+    lead_score = lead_score - 50
+    lead_score = lead_score * 2
+
     return lead_score
 
 def main():
@@ -158,33 +153,38 @@ def main():
     for att in attributes:
         # Count how many closed and nonclosed deals are associated with each attribute value.
         count_table = count_attribute_with_deal(lead_data, att)
-        #print(count_table)
 
         # Create a table of the percentage times of each permutation between deal 
         # status and the attribute.
         percent_table = create_percent_table(count_table)
 
         weight_table = create_weight_table(percent_table)
-        #print("weight_table: ", weight_table)
         att_weight_tables.append([att, weight_table])
-
-    #print(att_weight_tables)
 
     #Add 100
     for att_weight in att_weight_tables:
         scale_weights(att_weight[1])
-
-    #print(att_weight_tables)
     
     (score_scaler, worst_score) = find_score_range(att_weight_tables)
-    #print("score scaler: ", score_scaler)
 
-    curr_lead = lead_data.iloc[210]
+    curr_lead = lead_data.iloc[200]
     print("The lead we are analyzing:")
     print(curr_lead)
     lead_score = find_lead_score(curr_lead, att_weight_tables, score_scaler, worst_score)
-    rounded_lead_score = round(lead_score)
-    print("Lead has a", rounded_lead_score, "percent chance of resulting in closed deal.")
+    lead_score = round(lead_score)
+    print("Lead has a lead score of:", lead_score, " (Lead score calculated between -100 and 100)")
+
+    #How good is the given lead score?
+    if 50 <= lead_score >= 100:
+        print("Lead is extremely likely to result in a closed deal.")
+    elif 0 < lead_score < 50:
+        print("Lead is relatively likely to result in a closed deal.")
+    elif lead_score == 0:
+        print("Lead is neither likely nor unlikely to result in a closed deal.")
+    elif -50 < lead_score < 0:
+        print("Lead is relatively unlikely to result in a closed deal.")
+    elif -100 <= lead_score <= -50:
+        print("Lead is extremely unlikely to result in a closed deal.")
 
     # Display the percent table as a bar graph.
     #create_bar_graph(percent_table, attribute_name)
